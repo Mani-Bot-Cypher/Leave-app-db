@@ -2,25 +2,28 @@
 
 set -e
 
-# Start MySQL in the background
-echo "Starting MySQL in the background..."
-mysqld_safe &
+echo "[INFO] Starting MySQL server..."
 
-# Wait until MySQL is ready
-echo "Waiting for MySQL to be ready..."
-until mysqladmin ping --silent; do
+# Start MySQL server in the background
+mysqld &
+
+# Wait for MySQL to be ready
+echo "[INFO] Waiting for MySQL to be ready..."
+until mysqladmin ping -h "127.0.0.1" --silent; do
     sleep 2
 done
 
-# Check if database already exists
-if ! mysql -u root -proot -e "USE leaveapp;" 2>/dev/null; then
-    echo "Initializing database from init.sql..."
-    mysql -u root -proot < /docker-entrypoint-initdb.d/init.sql
-    echo "Database initialized!"
+echo "[INFO] MySQL is up and running."
+
+# Run SQL initialization if file exists
+if [ -f /docker-entrypoint-initdb.d/init.sql ]; then
+    echo "[INFO] Running initialization SQL script..."
+    mysql -u root -p"$MYSQL_ROOT_PASSWORD" < /docker-entrypoint-initdb.d/init.sql
+    echo "[INFO] Initialization script executed."
 else
-    echo "Database already exists, skipping init.sql."
+    echo "[INFO] No initialization script found."
 fi
 
-# Bring MySQL to the foreground
-echo "Bringing MySQL to the foreground..."
+# Keep container running in foreground
+echo "[INFO] Keeping MySQL in foreground..."
 wait
